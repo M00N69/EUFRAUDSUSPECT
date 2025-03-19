@@ -115,7 +115,7 @@ has_data = not (st.session_state.data_manager.data is None or st.session_state.d
 
 if not has_data:
     st.info("Aucune donnée n'est encore disponible. Veuillez lancer une vérification pour télécharger le dernier rapport.")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("Télécharger le rapport le plus récent"):
             check_updates()
@@ -125,8 +125,19 @@ if not has_data:
                 success = force_download_latest_report(st.session_state.data_manager)
                 if success:
                     st.success("Rapport téléchargé et ajouté avec succès! Rechargez la page pour voir les données.")
+                    st.experimental_rerun()
                 else:
                     st.error("Échec du téléchargement forcé.")
+    with col3:
+        if st.button("🔄 Réinitialiser la base de données"):
+            with st.spinner("Réinitialisation de la base de données..."):
+                try:
+                    success = st.session_state.data_manager.reset_database()
+                    if success:
+                        st.success("Base de données réinitialisée avec succès!")
+                        st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Erreur lors de la réinitialisation: {str(e)}")
     
     # Afficher les détails techniques pour le débogage
     if st.checkbox("Afficher les détails techniques"):
