@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 from data_manager import DataManager
 from visualizations import create_fraud_by_category_chart, create_fraud_by_type_chart
-from pdf_processor import check_for_new_report
+from pdf_processor import check_for_new_report, force_download_latest_report
 from ai_analyzer import analyze_with_mistral
 
 # Configuration de la page
@@ -115,8 +115,46 @@ has_data = not (st.session_state.data_manager.data is None or st.session_state.d
 
 if not has_data:
     st.info("Aucune donnée n'est encore disponible. Veuillez lancer une vérification pour télécharger le dernier rapport.")
-    if st.button("Télécharger le rapport le plus récent"):
-        check_updates()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Télécharger le rapport le plus récent"):
+            check_updates()
+    with col2:
+        if st.button("Forcer le téléchargement (ignorer les vérifications)"):
+            with st.spinner("Téléchargement forcé en cours..."):
+                success = force_download_latest_report(st.session_state.data_manager)
+                if success:
+                    st.success("Rapport téléchargé et ajouté avec succès! Rechargez la page pour voir les données.")
+                else:
+                    st.error("Échec du téléchargement forcé.")
+    
+    # Afficher les détails techniques pour le débogage
+    if st.checkbox("Afficher les détails techniques"):
+        st.write("Informations sur la base de données :")
+        db_info = {}
+        db_info["Chemin de la base"] = st.session_state.data_manager.db_path
+        db_info["Base existe"] = os.path.exists(st.session_state.data_manager.db_path)
+        
+        if os.path.exists(st.session_state.data_manager.db_path):
+            try:
+                conn = sqlite3.connect(st.session_state.data_manager.db_path)
+                c = conn.cursor()
+                
+                c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = c.fetchall()
+                db_info["Tables"] = [t[0] for t in tables]
+                
+                for table in db_info["Tables"]:
+                    c.execute(f"SELECT COUNT(*) FROM {table}")
+                    count = c.fetchone()[0]
+                    db_info[f"Nombre d'enregistrements dans {table}"] = count
+                
+                conn.close()
+            except Exception as e:
+                db_info["Erreur d'accès à la base"] = str(e)
+        
+        st.json(db_info)
+    
     # Afficher un message d'attente et arrêter l'exécution du reste de l'application
     st.stop()
 
