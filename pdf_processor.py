@@ -8,15 +8,24 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import tempfile
 
-def download_latest_report(save_dir="data/pdf_reports"):
+def download_latest_report(save_dir="./data/pdf_reports"):
     """
     Télécharge le dernier rapport disponible sur le site de l'UE
     """
     # URL de la page contenant les liens vers les rapports
     base_url = "https://food.ec.europa.eu/food-safety/acn/ffn-monthly_en"
     
-    # Créer le répertoire de sauvegarde s'il n'existe pas
-    os.makedirs(save_dir, exist_ok=True)
+    try:
+        # Créer le répertoire de sauvegarde s'il n'existe pas
+        # Utiliser un chemin relatif et s'assurer que le répertoire data existe d'abord
+        os.makedirs("./data", exist_ok=True)
+        os.makedirs(save_dir, exist_ok=True)
+    except Exception as e:
+        # En cas d'erreur lors de la création du répertoire, utiliser un répertoire temporaire
+        print(f"Erreur lors de la création du répertoire de sauvegarde: {str(e)}")
+        temp_dir = tempfile.mkdtemp()
+        save_dir = temp_dir
+        print(f"Utilisation du répertoire temporaire: {save_dir}")
     
     try:
         # Récupération de la page
@@ -83,6 +92,7 @@ def download_latest_report(save_dir="data/pdf_reports"):
         return local_path, report_date
         
     except Exception as e:
+        print(f"Erreur lors du téléchargement du rapport: {str(e)}")
         return None, f"Erreur lors du téléchargement du rapport: {str(e)}"
 
 def extract_date_from_pdf(pdf_path):
@@ -217,29 +227,35 @@ def check_for_new_report(data_manager):
     latest_year, latest_month = data_manager.get_latest_report_date()
     
     # Télécharger le dernier rapport disponible
-    pdf_path, report_date = download_latest_report()
-    
-    if not pdf_path:
-        return False
-    
-    # Extraire l'année et le mois du rapport téléchargé
     try:
-        date_obj = datetime.strptime(report_date, "%Y-%m")
-        year = date_obj.year
-        month = date_obj.month
-    except:
-        return False
-    
-    # Vérifier si ce rapport est déjà dans la base de données
-    if latest_year is not None and latest_month is not None:
-        if year < latest_year or (year == latest_year and month <= latest_month):
-            # Ce rapport est déjà dans la base de données ou plus ancien
+        pdf_path, report_date = download_latest_report()
+        
+        if not pdf_path:
+            print(f"Aucun PDF téléchargé: {report_date}")
             return False
-    
-    # Extraire les données du PDF
-    extracted_data = extract_data_from_pdf(pdf_path)
-    
-    # Ajouter les données à la base de données
-    success = data_manager.add_report_data(report_date, pdf_path, extracted_data)
-    
-    return success
+        
+        # Extraire l'année et le mois du rapport téléchargé
+        try:
+            date_obj = datetime.strptime(report_date, "%Y-%m")
+            year = date_obj.year
+            month = date_obj.month
+        except:
+            print(f"Erreur lors de l'analyse de la date du rapport: {report_date}")
+            return False
+        
+        # Vérifier si ce rapport est déjà dans la base de données
+        if latest_year is not None and latest_month is not None:
+            if year < latest_year or (year == latest_year and month <= latest_month):
+                # Ce rapport est déjà dans la base de données ou plus ancien
+                return False
+        
+        # Extraire les données du PDF
+        extracted_data = extract_data_from_pdf(pdf_path)
+        
+        # Ajouter les données à la base de données
+        success = data_manager.add_report_data(report_date, pdf_path, extracted_data)
+        
+        return success
+    except Exception as e:
+        print(f"Erreur lors de la vérification du nouveau rapport: {str(e)}")
+        return False
