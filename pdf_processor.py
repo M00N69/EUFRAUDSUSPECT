@@ -8,6 +8,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import tempfile
 import streamlit as st
+import traceback
 
 def download_latest_report(save_dir="./data/pdf_reports"):
     """
@@ -158,7 +159,7 @@ def extract_date_from_pdf(pdf_path):
 
 def extract_data_from_pdf(pdf_path):
     """
-    Extrait les données structurées du rapport PDF
+    Extrait les données structurées du rapport PDF avec une gestion améliorée des cellules fusionnées
     """
     extracted_data = {
         'total_suspicions': 0,
@@ -170,8 +171,8 @@ def extract_data_from_pdf(pdf_path):
         with pdfplumber.open(pdf_path) as pdf:
             st.info(f"PDF ouvert avec succès. {len(pdf.pages)} pages trouvées.")
             
-            # Extraction du nombre total de suspicions (généralement sur la première ou deuxième page)
-            for page_num in range(min(2, len(pdf.pages))):
+            # Extraction du nombre total de suspicions
+            for page_num in range(min(3, len(pdf.pages))):
                 page = pdf.pages[page_num]
                 text = page.extract_text()
                 
@@ -181,22 +182,52 @@ def extract_data_from_pdf(pdf_path):
                     st.info(f"Nombre total de suspicions trouvé: {extracted_data['total_suspicions']}")
                     break
             
-            # Extraction des tableaux de données pour les différentes catégories de fraude
+            # Variables pour suivre l'état entre les pages et les tableaux
+            current_fraud_type = None
+            current_classification = None
+            last_values = {}  # Pour stocker les dernières valeurs non vides par colonne
             suspicions = []
             
-            st.info("Analyse des tableaux de données...")
-            # Tables à partir de la page 3
+            # Traiter chaque page à partir de la page 3 (index 2)
             for page_num in range(2, len(pdf.pages)):
                 page = pdf.pages[page_num]
-                tables = page.extract_tables()
+                text = page.extract_text()
                 
+                # Déterminer le type de fraude pour cette page
+                # Rechercher des titres de section numérotés
+                fraud_section_patterns = [
+                    (r"1\.?\s*PRODUCT\s+TAMPERING", "Product tampering"),
+                    (r"2\.?\s*RECORD\s+TAMPERING", "Record tampering"),
+                    (r"3\.?\s*OTHER\s+NON-COMPLIANCES", "Other non-compliances")
+                ]
+                
+                for pattern, fraud_type in fraud_section_patterns:
+                    if re.search(pattern, text, re.IGNORECASE):
+                        current_fraud_type = fraud_type
+                        st.info(f"Type de fraude détecté: {current_fraud_type}")
+                        # Réinitialiser les valeurs précédentes lors du changement de section
+                        last_values = {}
+                        current_classification = None
+                        break
+                
+                # Si aucun pattern n'a matché, essayer une méthode alternative
+                if current_fraud_type is None:
+                    if "PRODUCT TAMPERING" in text:
+                        current_fraud_type = "Product tampering"
+                    elif "RECORD TAMPERING" in text:
+                        current_fraud_type = "Record tampering"
+                    elif "OTHER NON-COMPLIANCES" in text:
+                        current_fraud_type = "Other non-compliances"
+                
+                # Extraire les tableaux
+                tables = page.extract_tables()
                 st.info(f"Page {page_num+1}: {len(tables)} tableaux trouvés.")
                 
                 for table_idx, table in enumerate(tables):
                     if not table or len(table) <= 1:
                         continue
                     
-                    # Vérifier si c'est un en-tête ou un tableau de données
+                    # Vérifier si c'est un tableau de données pertinent
                     header_row = table[0]
                     if not header_row:
                         continue
@@ -205,76 +236,164 @@ def extract_data_from_pdf(pdf_path):
                     headers_str = ', '.join([str(h) for h in header_row if h])
                     st.info(f"Tableau {table_idx+1}, en-têtes: {headers_str}")
                     
-                    # Identifier le type de fraude (classification) à partir du texte de la page
-                    text = page.extract_text()
-                    classification = ""
-                    
-                    # Recherche des titres de section principaux
-                    if "PRODUCT TAMPERING" in text:
-                        fraud_type = "Product tampering"
-                    elif "RECORD TAMPERING" in text:
-                        fraud_type = "Record tampering"
-                    elif "OTHER NON-COMPLIANCES" in text:
-                        fraud_type = "Other non-compliances"
-                    else:
-                        fraud_type = "Unknown"
-                    
-                    st.info(f"Type de fraude détecté: {fraud_type}")
-                    
                     # En-têtes attendus dans les tableaux
                     expected_headers = ["CLASSIFICATION", "PRODUCT CATEGORY", "COMMODITY", "ISSUE", "ORIGIN", "NOTIFIED BY"]
                     
-                    # Vérifier si c'est bien un tableau de données pertinent
-                    if any(header in ' '.join(str(h) for h in header_row if h) for header in expected_headers):
-                        # Déterminer les indices des colonnes
-                        header_indices = {}
-                        for i, cell in enumerate(header_row):
-                            if cell in expected_headers:
-                                header_indices[cell] = i
-                        
-                        st.info(f"Colonnes trouvées: {', '.join(header_indices.keys())}")
-                        
-                        # S'il manque des colonnes clés, continuer
-                        if len(header_indices) < 3:
-                            st.warning(f"Pas assez de colonnes pertinentes ({len(header_indices)}), ce tableau est ignoré.")
+                    # Déterminer les indices des colonnes avec correspondance partielle
+                    header_indices = {}
+                    for i, cell in enumerate(header_row):
+                        if not cell:
+                            continue
+                        cell_str = str(cell).strip().upper()
+                        for expected in expected_headers:
+                            if expected in cell_str or cell_str in expected:
+                                header_indices[expected] = i
+                                break
+                    
+                    # Afficher les colonnes trouvées
+                    st.info(f"Colonnes identifiées: {', '.join(header_indices.keys())}")
+                    
+                    # S'il manque des colonnes clés, passer au tableau suivant
+                    if len(header_indices) < 3:
+                        st.warning(f"Pas assez de colonnes pertinentes ({len(header_indices)}), ce tableau est ignoré.")
+                        continue
+                    
+                    # Traiter chaque ligne (sauf l'en-tête)
+                    rows_processed = 0
+                    for row in table[1:]:
+                        # Ignorer les lignes vides
+                        if not row or all(not cell or (isinstance(cell, str) and cell.strip() == "") for cell in row):
                             continue
                         
-                        rows_processed = 0
-                        # Traiter chaque ligne (sauf l'en-tête)
-                        for row in table[1:]:
-                            # Ignorer les lignes vides
-                            if not row or all(cell is None or cell.strip() == "" for cell in row if isinstance(cell, str)):
-                                continue
-                            
-                            suspicion = {
-                                'fraud_type': fraud_type,
-                                'classification': row[header_indices.get('CLASSIFICATION', 0)] if 'CLASSIFICATION' in header_indices and len(row) > header_indices.get('CLASSIFICATION', 0) else "",
-                                'product_category': row[header_indices.get('PRODUCT CATEGORY', 1)] if 'PRODUCT CATEGORY' in header_indices and len(row) > header_indices.get('PRODUCT CATEGORY', 1) else "",
-                                'commodity': row[header_indices.get('COMMODITY', 2)] if 'COMMODITY' in header_indices and len(row) > header_indices.get('COMMODITY', 2) else "",
-                                'issue': row[header_indices.get('ISSUE', 3)] if 'ISSUE' in header_indices and len(row) > header_indices.get('ISSUE', 3) else "",
-                                'origin': row[header_indices.get('ORIGIN', 4)] if 'ORIGIN' in header_indices and len(row) > header_indices.get('ORIGIN', 4) else "",
-                                'notified_by': row[header_indices.get('NOTIFIED BY', 5)] if 'NOTIFIED BY' in header_indices and len(row) > header_indices.get('NOTIFIED BY', 5) else ""
-                            }
-                            
-                            # Nettoyage des données
-                            for key, value in suspicion.items():
-                                if value is None:
-                                    suspicion[key] = ""
-                                elif isinstance(value, str):
-                                    suspicion[key] = value.strip()
-                            
-                            suspicions.append(suspicion)
-                            rows_processed += 1
+                        # Mettre à jour les dernières valeurs non vides
+                        for i, cell in enumerate(row):
+                            if cell and isinstance(cell, str) and cell.strip():
+                                last_values[i] = cell.strip()
                         
-                        st.info(f"{rows_processed} lignes traitées dans ce tableau.")
+                        # Récupérer la classification de cette ligne ou utiliser la dernière valeur
+                        if 'CLASSIFICATION' in header_indices:
+                            idx = header_indices['CLASSIFICATION']
+                            if idx < len(row) and row[idx] and isinstance(row[idx], str) and row[idx].strip():
+                                current_classification = row[idx].strip()
+                            else:
+                                # Utiliser la dernière valeur connue pour cette colonne
+                                row_classification = last_values.get(idx, "")
+                                if row_classification:
+                                    current_classification = row_classification
+                        
+                        # Créer un dictionnaire avec les données de la ligne
+                        suspicion = {
+                            'fraud_type': current_fraud_type or "",
+                            'classification': current_classification or "",
+                            'product_category': "",
+                            'commodity': "",
+                            'issue': "",
+                            'origin': "",
+                            'notified_by': ""
+                        }
+                        
+                        # Remplir les autres champs en utilisant les valeurs existantes ou dernières connues
+                        for field, header in [
+                            ('product_category', 'PRODUCT CATEGORY'),
+                            ('commodity', 'COMMODITY'),
+                            ('issue', 'ISSUE'),
+                            ('origin', 'ORIGIN'),
+                            ('notified_by', 'NOTIFIED BY')
+                        ]:
+                            if header in header_indices:
+                                idx = header_indices[header]
+                                if idx < len(row) and row[idx] and isinstance(row[idx], str) and row[idx].strip():
+                                    suspicion[field] = row[idx].strip()
+                                else:
+                                    # Utiliser la dernière valeur connue pour cette colonne si nécessaire
+                                    # Sauf pour commodity, issue, origin et notified_by où chaque ligne doit avoir sa propre valeur
+                                    if field in ['product_category', 'classification']:
+                                        suspicion[field] = last_values.get(idx, "")
+                        
+                        # Ne pas ajouter les lignes où les champs essentiels sont vides
+                        essential_fields = ['product_category', 'commodity', 'issue']
+                        if all(suspicion[field] == "" for field in essential_fields):
+                            continue
+                        
+                        suspicions.append(suspicion)
+                        rows_processed += 1
+                    
+                    st.info(f"{rows_processed} lignes traitées dans ce tableau.")
+            
+            # Vérification de cohérence: le nombre total de suspicions doit correspondre
+            if extracted_data['total_suspicions'] > 0 and len(suspicions) > 0:
+                st.info(f"Vérification de cohérence: {len(suspicions)} suspicions extraites vs {extracted_data['total_suspicions']} annoncées")
+                
+                # Si le nombre est très différent, afficher un avertissement
+                if abs(len(suspicions) - extracted_data['total_suspicions']) > extracted_data['total_suspicions'] * 0.2:
+                    st.warning(f"Écart important entre le nombre de suspicions extraites et le nombre annoncé")
             
             extracted_data['suspicions'] = suspicions
             st.success(f"Extraction terminée. {len(suspicions)} suspicions extraites au total.")
             
     except Exception as e:
         st.error(f"Erreur lors de l'extraction des données du PDF: {str(e)}")
+        st.error(traceback.format_exc())
     
     return extracted_data
+
+def post_process_extracted_data(extracted_data):
+    """
+    Nettoie et normalise les données extraites
+    """
+    if not extracted_data or 'suspicions' not in extracted_data:
+        return extracted_data
+    
+    suspicions = extracted_data['suspicions']
+    processed_suspicions = []
+    
+    for susp in suspicions:
+        # Nettoyer les chaînes de caractères
+        for key, value in susp.items():
+            if isinstance(value, str):
+                # Supprimer les astérisques souvent utilisés comme références
+                cleaned_value = re.sub(r'\*+$', '', value.strip())
+                # Supprimer les espaces multiples
+                cleaned_value = re.sub(r'\s+', ' ', cleaned_value)
+                susp[key] = cleaned_value
+        
+        # Vérifier que l'entrée a un minimum de données valides
+        has_product = bool(susp.get('product_category', '').strip())
+        has_issue = bool(susp.get('issue', '').strip())
+        
+        if has_product and has_issue:
+            processed_suspicions.append(susp)
+    
+    extracted_data['suspicions'] = processed_suspicions
+    return extracted_data
+
+def try_extract_with_camelot(pdf_path):
+    """
+    Tente d'extraire les données avec Camelot si disponible
+    """
+    try:
+        import camelot
+        st.info("Tentative d'extraction avec Camelot...")
+        
+        # Extraction avec Camelot en mode "lattice" (tableaux avec bordures)
+        tables = camelot.read_pdf(pdf_path, pages='3-end', flavor='lattice')
+        st.info(f"{len(tables)} tableaux trouvés avec Camelot (mode lattice)")
+        
+        if len(tables) == 0:
+            # Si aucun tableau n'est trouvé en mode lattice, essayer en mode stream
+            tables = camelot.read_pdf(pdf_path, pages='3-end', flavor='stream')
+            st.info(f"{len(tables)} tableaux trouvés avec Camelot (mode stream)")
+        
+        # Traitement des tableaux Camelot
+        # Ce code est à compléter selon vos besoins spécifiques
+        return True
+        
+    except ImportError:
+        st.info("Camelot n'est pas installé. Utilisation de pdfplumber uniquement.")
+        return False
+    except Exception as e:
+        st.warning(f"Erreur lors de l'utilisation de Camelot: {str(e)}")
+        return False
 
 def check_for_new_report(data_manager):
     """
@@ -316,16 +435,20 @@ def check_for_new_report(data_manager):
         # Extraire les données du PDF
         st.write("Extraction des données du PDF...")
         extracted_data = extract_data_from_pdf(pdf_path)
-        st.write(f"Données extraites: {len(extracted_data.get('suspicions', []))} suspicions")
+        
+        # Post-traiter les données extraites
+        processed_data = post_process_extracted_data(extracted_data)
+        st.write(f"Données extraites et traitées: {len(processed_data.get('suspicions', []))} suspicions")
         
         # Ajouter les données à la base de données
         st.write("Ajout des données à la base...")
-        success = data_manager.add_report_data(report_date, pdf_path, extracted_data)
+        success = data_manager.add_report_data(report_date, pdf_path, processed_data)
         st.write(f"Ajout réussi: {success}")
         
         return success
     except Exception as e:
         st.error(f"Erreur lors de la vérification: {str(e)}")
+        st.error(traceback.format_exc())
         return False
 
 def force_download_latest_report(data_manager):
@@ -343,14 +466,18 @@ def force_download_latest_report(data_manager):
         # Extraire les données du PDF
         st.write("Extraction des données du PDF...")
         extracted_data = extract_data_from_pdf(pdf_path)
-        st.write(f"Données extraites: {len(extracted_data.get('suspicions', []))} suspicions")
+        
+        # Post-traiter les données extraites
+        processed_data = post_process_extracted_data(extracted_data)
+        st.write(f"Données extraites et traitées: {len(processed_data.get('suspicions', []))} suspicions")
         
         # Ajouter les données à la base de données
         st.write("Ajout des données à la base...")
-        success = data_manager.add_report_data(report_date, pdf_path, extracted_data)
+        success = data_manager.add_report_data(report_date, pdf_path, processed_data)
         st.write(f"Ajout réussi: {success}")
         
         return success
     except Exception as e:
         st.error(f"Erreur lors du téléchargement forcé: {str(e)}")
+        st.error(traceback.format_exc())
         return False
