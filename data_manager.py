@@ -59,26 +59,65 @@ class DataManager:
         """Charge toutes les données des suspicions de la base de données"""
         conn = sqlite3.connect(self.db_path)
         
-        # Récupération des données combinées
-        query = '''
-        SELECT 
-            s.*, 
-            r.report_date as date,
-            r.report_year as year,
-            r.report_month as month,
-            r.total_suspicions
-        FROM 
-            suspicions s
-        JOIN 
-            reports r ON s.report_id = r.id
-        '''
+        # Vérifier si les tables existent et contiennent des données
+        c = conn.cursor()
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='suspicions'")
+        table_exists = c.fetchone()
         
-        self.data = pd.read_sql(query, conn)
-        conn.close()
+        if not table_exists:
+            # Si la table n'existe pas encore, renvoyer un dataframe vide avec les colonnes attendues
+            self.data = pd.DataFrame(columns=[
+                'id', 'report_id', 'classification', 'product_category', 
+                'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
+                'date', 'year', 'month', 'total_suspicions'
+            ])
+            conn.close()
+            return
+        
+        # Vérifier si la table contient des données
+        c.execute("SELECT COUNT(*) FROM suspicions")
+        count = c.fetchone()[0]
+        
+        if count == 0:
+            # Si la table est vide, renvoyer un dataframe vide
+            self.data = pd.DataFrame(columns=[
+                'id', 'report_id', 'classification', 'product_category', 
+                'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
+                'date', 'year', 'month', 'total_suspicions'
+            ])
+            conn.close()
+            return
+        
+        # Si on arrive ici, la table existe et contient des données
+        try:
+            query = '''
+            SELECT 
+                s.*, 
+                r.report_date as date,
+                r.report_year as year,
+                r.report_month as month,
+                r.total_suspicions
+            FROM 
+                suspicions s
+            JOIN 
+                reports r ON s.report_id = r.id
+            '''
+            
+            self.data = pd.read_sql(query, conn)
+        except Exception as e:
+            # En cas d'erreur, initialiser avec un DataFrame vide
+            self.data = pd.DataFrame(columns=[
+                'id', 'report_id', 'classification', 'product_category', 
+                'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
+                'date', 'year', 'month', 'total_suspicions'
+            ])
+            print(f"Erreur lors du chargement des données: {str(e)}")
+        finally:
+            conn.close()
     
     def get_available_dates(self):
         """Renvoie la liste des dates disponibles, triées chronologiquement"""
-        if self.data is None or 'date' not in self.data.columns:
+        if self.data is None or self.data.empty or 'date' not in self.data.columns:
             return [datetime.now().strftime("%Y-%m")]
         
         dates = sorted(self.data['date'].unique())
@@ -86,7 +125,7 @@ class DataManager:
     
     def get_product_categories(self):
         """Renvoie la liste des catégories de produits disponibles"""
-        if self.data is None or 'product_category' not in self.data.columns:
+        if self.data is None or self.data.empty or 'product_category' not in self.data.columns:
             return []
         
         categories = sorted(self.data['product_category'].unique())
@@ -94,7 +133,7 @@ class DataManager:
     
     def get_fraud_types(self):
         """Renvoie la liste des types de fraude disponibles"""
-        if self.data is None or 'fraud_type' not in self.data.columns:
+        if self.data is None or self.data.empty or 'fraud_type' not in self.data.columns:
             return []
         
         fraud_types = sorted(self.data['fraud_type'].unique())
@@ -102,12 +141,16 @@ class DataManager:
     
     def filter_data(self, start_date=None, end_date=None, categories=None, fraud_types=None):
         """Filtre les données selon les critères spécifiés"""
-        if self.data is None:
-            return pd.DataFrame()
+        if self.data is None or self.data.empty:
+            return pd.DataFrame(columns=[
+                'id', 'report_id', 'classification', 'product_category', 
+                'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
+                'date', 'year', 'month', 'total_suspicions'
+            ])
         
         filtered_data = self.data.copy()
         
-        if start_date and end_date:
+        if start_date and end_date and 'date' in filtered_data.columns:
             filtered_data = filtered_data[(filtered_data['date'] >= start_date) & 
                                          (filtered_data['date'] <= end_date)]
             
@@ -199,6 +242,24 @@ class DataManager:
         """Obtient la date du rapport le plus récent dans la base de données"""
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
+        
+        c.execute("""
+            SELECT name FROM sqlite_master WHERE type='table' AND name='reports'
+        """)
+        table_exists = c.fetchone()
+        
+        if not table_exists:
+            conn.close()
+            return None, None
+        
+        c.execute("""
+            SELECT COUNT(*) FROM reports
+        """)
+        count = c.fetchone()[0]
+        
+        if count == 0:
+            conn.close()
+            return None, None
         
         c.execute("""
             SELECT report_year, report_month FROM reports 
