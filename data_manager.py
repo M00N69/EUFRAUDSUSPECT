@@ -117,10 +117,21 @@ class DataManager:
     
     def get_available_dates(self):
         """Renvoie la liste des dates disponibles, triées chronologiquement"""
-        if self.data is None or self.data.empty or 'date' not in self.data.columns:
-            return [datetime.now().strftime("%Y-%m")]
+        if self.data is None or self.data.empty:
+            # Ne pas retourner la date actuelle, indiquer qu'il n'y a pas de données
+            return []
+        
+        if 'date' not in self.data.columns:
+            return []
         
         dates = sorted(self.data['date'].unique())
+        # Vérifier que dates contient des valeurs non vides
+        dates = [d for d in dates if d and not pd.isna(d)]
+        
+        # Si après filtrage il n'y a pas de dates valides, retourner une liste vide
+        if not dates:
+            return []
+            
         return dates
     
     def get_product_categories(self):
@@ -128,16 +139,18 @@ class DataManager:
         if self.data is None or self.data.empty or 'product_category' not in self.data.columns:
             return []
         
-        categories = sorted(self.data['product_category'].unique())
-        return categories
+        # S'assurer de ne retourner que des valeurs non nulles
+        categories = [cat for cat in self.data['product_category'].unique() if cat and not pd.isna(cat)]
+        return sorted(categories)
     
     def get_fraud_types(self):
         """Renvoie la liste des types de fraude disponibles"""
         if self.data is None or self.data.empty or 'fraud_type' not in self.data.columns:
             return []
         
-        fraud_types = sorted(self.data['fraud_type'].unique())
-        return fraud_types
+        # S'assurer de ne retourner que des valeurs non nulles
+        fraud_types = [ft for ft in self.data['fraud_type'].unique() if ft and not pd.isna(ft)]
+        return sorted(fraud_types)
     
     def filter_data(self, start_date=None, end_date=None, categories=None, fraud_types=None):
         """Filtre les données selon les critères spécifiés"""
