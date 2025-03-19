@@ -7,3 +7,15 @@ pdfplumber
 plotly
 numpy
 mistralai
+
+# Bibliothèques d'extraction avancée
+camelot-py
+opencv-python
+tabula-py
+pdfminer.six
+pytesseract
+pdf2image
+
+# Utilitaires supplémentaires
+openpyxl  # Pour le support Excel
+python-docx # Pour le support Word
