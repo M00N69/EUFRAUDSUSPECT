@@ -28,14 +28,17 @@ if 'last_update_check' not in st.session_state:
 # Fonction pour vérifier les mises à jour
 def check_updates():
     with st.spinner("Vérification des nouveaux rapports..."):
-        new_report_added = check_for_new_report(st.session_state.data_manager)
-        if new_report_added:
-            st.success("Nouveau rapport ajouté à la base de données!")
-            # Rechargement des données
-            st.session_state.data_manager.load_data()
-        else:
-            st.info("Aucun nouveau rapport disponible.")
-        st.session_state.last_update_check = datetime.now()
+        try:
+            new_report_added = check_for_new_report(st.session_state.data_manager)
+            if new_report_added:
+                st.success("Nouveau rapport ajouté à la base de données!")
+                # Rechargement des données
+                st.session_state.data_manager.load_data()
+            else:
+                st.info("Aucun nouveau rapport disponible.")
+            st.session_state.last_update_check = datetime.now()
+        except Exception as e:
+            st.error(f"Erreur lors de la vérification: {str(e)}")
 
 # Sidebar avec les contrôles
 with st.sidebar:
@@ -58,15 +61,18 @@ with st.sidebar:
     all_dates = st.session_state.data_manager.get_available_dates()
     
     # Vérifier si nous avons des dates disponibles
-    if len(all_dates) > 0:
+    if len(all_dates) > 1:  # Besoin d'au moins 2 dates pour le slider
         start_date, end_date = st.select_slider(
             "Période d'analyse",
             options=all_dates,
             value=(all_dates[0], all_dates[-1])
         )
+    elif len(all_dates) == 1:
+        st.write(f"Période disponible: {all_dates[0]}")
+        start_date = end_date = all_dates[0]
     else:
-        start_date, end_date = None, None
         st.write("Aucune période disponible. Veuillez télécharger des rapports.")
+        start_date = end_date = None
     
     # Sélection des catégories de produits
     all_categories = st.session_state.data_manager.get_product_categories()
@@ -105,7 +111,9 @@ if st.session_state.last_update_check is None:
     check_updates()
 
 # Vérifier si des données existent
-if st.session_state.data_manager.data is None or st.session_state.data_manager.data.empty:
+has_data = not (st.session_state.data_manager.data is None or st.session_state.data_manager.data.empty)
+
+if not has_data:
     st.info("Aucune donnée n'est encore disponible. Veuillez lancer une vérification pour télécharger le dernier rapport.")
     if st.button("Télécharger le rapport le plus récent"):
         check_updates()
@@ -123,23 +131,28 @@ filtered_data = st.session_state.data_manager.filter_data(
     fraud_types=selected_fraud_types
 )
 
+# Vérifier si nous avons des données filtrées
+if filtered_data.empty:
+    st.warning("Aucune donnée disponible avec les filtres actuels. Essayez de modifier vos filtres.")
+    st.stop()
+
 # Affichage des KPIs
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    total_suspicions = filtered_data['total_suspicions'].sum() if 'total_suspicions' in filtered_data.columns and not filtered_data.empty else 0
+    total_suspicions = filtered_data['total_suspicions'].sum() if 'total_suspicions' in filtered_data.columns else 0
     st.metric("Total des suspicions", f"{total_suspicions}")
 
 with col2:
-    total_countries = filtered_data['origin'].nunique() if 'origin' in filtered_data.columns and not filtered_data.empty else 0
+    total_countries = filtered_data['origin'].nunique() if 'origin' in filtered_data.columns else 0
     st.metric("Pays d'origine concernés", f"{total_countries}")
 
 with col3:
-    top_category = filtered_data['product_category'].value_counts().idxmax() if 'product_category' in filtered_data.columns and not filtered_data.empty else "N/A"
+    top_category = filtered_data['product_category'].value_counts().idxmax() if 'product_category' in filtered_data.columns and not filtered_data['product_category'].empty else "N/A"
     st.metric("Catégorie la plus signalée", top_category)
 
 with col4:
-    top_fraud = filtered_data['fraud_type'].value_counts().idxmax() if 'fraud_type' in filtered_data.columns and not filtered_data.empty else "N/A" 
+    top_fraud = filtered_data['fraud_type'].value_counts().idxmax() if 'fraud_type' in filtered_data.columns and not filtered_data['fraud_type'].empty else "N/A" 
     st.metric("Type de fraude le plus fréquent", top_fraud)
 
 # Graphiques principaux
@@ -152,7 +165,7 @@ fig_fraud_type = create_fraud_by_type_chart(filtered_data)
 st.plotly_chart(fig_fraud_type, use_container_width=True)
 
 # Carte des pays d'origine
-if 'origin' in filtered_data.columns and not filtered_data.empty:
+if 'origin' in filtered_data.columns and not filtered_data['origin'].empty:
     st.subheader("Distribution géographique des origines")
     country_counts = filtered_data['origin'].value_counts().reset_index()
     country_counts.columns = ['country', 'count']
@@ -172,7 +185,7 @@ if 'origin' in filtered_data.columns and not filtered_data.empty:
         st.warning(f"Impossible de créer la carte géographique. Certains noms de pays peuvent être non reconnus.")
 
 # Tendances temporelles
-if 'date' in filtered_data.columns and not filtered_data.empty:
+if 'date' in filtered_data.columns and len(filtered_data['date'].unique()) > 1:
     st.subheader("Évolution des suspicions dans le temps")
     time_trend = filtered_data.groupby('date').size().reset_index(name='count')
     
@@ -186,14 +199,11 @@ if 'date' in filtered_data.columns and not filtered_data.empty:
     st.plotly_chart(fig_trend, use_container_width=True)
 
 # Section Tableau détaillé
-if not filtered_data.empty:
-    st.subheader("Détails des suspicions")
-    # Sélection des colonnes pertinentes pour l'affichage
-    display_columns = ['product_category', 'commodity', 'issue', 'origin', 'notified_by', 'fraud_type', 'date']
-    display_data = filtered_data[display_columns] if all(col in filtered_data.columns for col in display_columns) else filtered_data
-    st.dataframe(display_data, use_container_width=True)
-else:
-    st.info("Aucune donnée disponible avec les filtres actuels.")
+st.subheader("Détails des suspicions")
+# Sélection des colonnes pertinentes pour l'affichage
+display_columns = ['product_category', 'commodity', 'issue', 'origin', 'notified_by', 'fraud_type', 'date']
+display_data = filtered_data[display_columns] if all(col in filtered_data.columns for col in display_columns) else filtered_data
+st.dataframe(display_data, use_container_width=True)
 
 # Section analyse IA
 if run_ai_analysis:
