@@ -3,19 +3,66 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 import json
+import streamlit as st
 
 class DataManager:
-    def __init__(self, db_path="data/database.sqlite"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        # Utiliser un chemin dans /tmp pour Streamlit Cloud
+        if db_path is None:
+            # Vérifier si on peut écrire dans ./data
+            try:
+                os.makedirs("./data", exist_ok=True)
+                with open("./data/test_write.txt", "w") as f:
+                    f.write("test")
+                os.remove("./data/test_write.txt")
+                self.db_path = "./data/database.sqlite"
+            except:
+                # Si non, utiliser /tmp
+                self.db_path = "/tmp/eufraud_database.sqlite"
+                st.info(f"Utilisation d'une base de données temporaire: {self.db_path}")
+        else:
+            self.db_path = db_path
+        
         self.ensure_db_exists()
         self.data = None
         self.load_data()
     
     def ensure_db_exists(self):
         """Vérifie si la base de données existe, la crée si nécessaire"""
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        
-        if not os.path.exists(self.db_path):
+        try:
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+            
+            # Vérifier si la base de données existe et est valide
+            need_init = False
+            if not os.path.exists(self.db_path):
+                need_init = True
+            else:
+                # Vérifier si la structure est valide
+                try:
+                    conn = sqlite3.connect(self.db_path)
+                    c = conn.cursor()
+                    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='reports'")
+                    if not c.fetchone():
+                        need_init = True
+                    conn.close()
+                except Exception as e:
+                    st.warning(f"Base de données existante invalide: {str(e)}")
+                    # Renommer l'ancienne base de données
+                    backup_path = self.db_path + ".backup"
+                    try:
+                        os.rename(self.db_path, backup_path)
+                        st.info(f"Base de données sauvegardée dans {backup_path}")
+                    except:
+                        pass
+                    need_init = True
+            
+            if need_init:
+                st.info("Initialisation de la base de données...")
+                self.init_database()
+        except Exception as e:
+            st.error(f"Erreur lors de la vérification de la base de données: {str(e)}")
+            # Utiliser une base de données en mémoire comme solution de secours
+            self.db_path = ":memory:"
             self.init_database()
     
     def init_database(self):
@@ -54,6 +101,7 @@ class DataManager:
         
         conn.commit()
         conn.close()
+        st.success("Base de données initialisée avec succès!")
     
     def load_data(self):
         """Charge toutes les données des suspicions de la base de données"""
@@ -111,7 +159,7 @@ class DataManager:
                 'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
                 'date', 'year', 'month', 'total_suspicions'
             ])
-            print(f"Erreur lors du chargement des données: {str(e)}")
+            st.error(f"Erreur lors du chargement des données: {str(e)}")
         finally:
             conn.close()
     
@@ -287,3 +335,27 @@ class DataManager:
             return result[0], result[1]
         else:
             return None, None
+            
+    def reset_database(self):
+        """Réinitialise complètement la base de données"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Supprimer les tables existantes
+        c.execute("DROP TABLE IF EXISTS suspicions")
+        c.execute("DROP TABLE IF EXISTS reports")
+        
+        conn.commit()
+        conn.close()
+        
+        # Recréer la structure
+        self.init_database()
+        
+        # Réinitialiser les données
+        self.data = pd.DataFrame(columns=[
+            'id', 'report_id', 'classification', 'product_category', 
+            'commodity', 'issue', 'origin', 'notified_by', 'fraud_type',
+            'date', 'year', 'month', 'total_suspicions'
+        ])
+        
+        return True
