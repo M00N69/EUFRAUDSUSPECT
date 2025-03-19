@@ -12,6 +12,12 @@ def create_fraud_by_category_chart(data):
             title="Données insuffisantes pour créer le graphique"
         )
     
+    # Vérifier qu'il y a des valeurs non nulles
+    if data['product_category'].isna().all():
+        return go.Figure().update_layout(
+            title="Aucune donnée de catégorie disponible"
+        )
+    
     # Compter les occurrences par catégorie
     category_counts = data['product_category'].value_counts().reset_index()
     category_counts.columns = ['category', 'count']
@@ -51,6 +57,12 @@ def create_fraud_by_type_chart(data):
             title="Données insuffisantes pour créer le graphique"
         )
     
+    # Vérifier qu'il y a des valeurs non nulles
+    if data['fraud_type'].isna().all():
+        return go.Figure().update_layout(
+            title="Aucune donnée de type de fraude disponible"
+        )
+    
     # Compter les occurrences par type de fraude
     fraud_counts = data['fraud_type'].value_counts().reset_index()
     fraud_counts.columns = ['type', 'count']
@@ -83,6 +95,12 @@ def create_detection_source_chart(data):
             title="Données insuffisantes pour créer le graphique"
         )
     
+    # Vérifier qu'il y a des valeurs non nulles
+    if data['detection_source'].isna().all():
+        return go.Figure().update_layout(
+            title="Aucune donnée de source de détection disponible"
+        )
+    
     source_counts = data['detection_source'].value_counts().reset_index()
     source_counts.columns = ['source', 'count']
     
@@ -107,18 +125,42 @@ def create_origin_notifier_heatmap(data):
             title="Données insuffisantes pour créer le graphique"
         )
     
+    # Vérifier qu'il y a des valeurs non nulles
+    if data['origin'].isna().all() or data['notified_by'].isna().all():
+        return go.Figure().update_layout(
+            title="Données insuffisantes pour créer la heatmap"
+        )
+    
     # Créer une table croisée dynamique
     try:
         heatmap_data = pd.crosstab(data['origin'], data['notified_by'])
+        
+        # S'assurer qu'il y a des données
+        if heatmap_data.empty:
+            return go.Figure().update_layout(
+                title="Pas assez de données pour créer la heatmap"
+            )
         
         # Filtrer pour garder uniquement les combinaisons les plus fréquentes
         top_origins = data['origin'].value_counts().nlargest(min(15, len(data['origin'].unique()))).index
         top_notifiers = data['notified_by'].value_counts().nlargest(min(10, len(data['notified_by'].unique()))).index
         
+        # Vérifier qu'il reste des données après filtrage
+        if len(top_origins) == 0 or len(top_notifiers) == 0:
+            return go.Figure().update_layout(
+                title="Pas assez de données pour créer la heatmap après filtrage"
+            )
+        
         filtered_heatmap = heatmap_data.loc[
             heatmap_data.index.isin(top_origins),
             heatmap_data.columns.isin(top_notifiers)
         ]
+        
+        # Vérifier à nouveau si le dataframe filtré est vide
+        if filtered_heatmap.empty:
+            return go.Figure().update_layout(
+                title="Pas assez de données communes pour créer la heatmap"
+            )
         
         # Créer la heatmap
         fig = px.imshow(
@@ -148,6 +190,12 @@ def create_timeline_chart(data, time_column='date'):
     if data is None or data.empty or time_column not in data.columns or 'fraud_type' not in data.columns:
         return go.Figure().update_layout(
             title="Données insuffisantes pour créer le graphique"
+        )
+    
+    # Vérifier qu'il y a suffisamment de dates uniques
+    if len(data[time_column].unique()) < 2:
+        return go.Figure().update_layout(
+            title="Pas assez de périodes pour créer un graphique d'évolution"
         )
     
     try:
