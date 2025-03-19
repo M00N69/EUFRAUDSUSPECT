@@ -235,8 +235,23 @@ class DataManager:
         
         # Vérifier si ce rapport existe déjà
         c.execute("SELECT id FROM reports WHERE report_year = ? AND report_month = ?", 
-                 (year, month))
+                  (year, month))
         existing = c.fetchone()
+        
+        # Validation supplémentaire des données avant insertion
+        suspicions = extracted_data.get('suspicions', [])
+        valid_suspicions = []
+        
+        for susp in suspicions:
+            # Vérifier que les champs essentiels sont présents
+            has_product = bool(susp.get('product_category', '').strip())
+            has_issue = bool(susp.get('issue', '').strip())
+            
+            if has_product and has_issue:
+                valid_suspicions.append(susp)
+        
+        # Mettre à jour avec les suspicions validées
+        extracted_data['suspicions'] = valid_suspicions
         
         if existing:
             # Mise à jour plutôt qu'ajout
