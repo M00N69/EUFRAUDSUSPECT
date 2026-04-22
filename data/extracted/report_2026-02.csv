@@ -1,0 +1,105 @@
+fraud_type,classification,product_category,commodity,issue,origin,notified_by
+Product tampering,Additives not compliant with EU MLsi,Cereals and bakery,breadcrumbs,"annatto bixin (E 160b (i)), annatto norbixin",Netherlands,Belgium
+Product tampering,Additives not compliant with EU MLsi,products,,(E 160b ((ii)) (265 mg/kg),,
+Product tampering,Adulteration (ingredient substitution),products,food supplements,lower content of vitamin A than declared,France,Portugal
+Product tampering,Adulteration (ingredient substitution),products,,(118,,
+Product tampering,Adulteration (ingredient substitution),products,salami,lower content of meat than declared,Italy,Czechia
+Product tampering,Adulteration (ingredient substitution),products,,(20% less),,
+Product tampering,Adulteration,Poultry meat and poultry meat products,chicken meat,water addition (W/P ratio: 3.57),Poland,France
+Product tampering,substitution),Confectionery,,titanium dioxide (E 171) (16.3 mg/kg),,
+Product tampering,substitution),Confectionery,,(undeclared),,
+Product tampering,substitution),Confectionery,,butylhydroxytoluene (BHT) (E 321) (88 mg/kg),,
+Product tampering,substitution),Confectionery,,(undeclared),,
+Product tampering,substitution),Fish and fish products,yellowfin tuna,suspected enhancement with unauthorised,,
+Product tampering,substitution),Fish and fish products,(Thunnus,"additives, higher content of salt than declared",,
+Product tampering,substitution),Fish and fish products,albacares) (frozen),(1.36 g/100g instead of 0.84 g/100g),,
+Product tampering,substitution),Milk and milk products,,"tartrazine (E 102) (11.6 mg/kg), sunset yellow",,
+Product tampering,substitution),Milk and milk products,,FCF (E 110) (8.8 mg/kg),,
+Product tampering,substitution),Non-alcoholic beverages,,"sucralose (E 955), sorbic acid (E 200) above",,
+Product tampering,substitution),Non-alcoholic beverages,,"ML (>250 mg/kg), benzoic acid (E210)",,
+Record tampering,"Unapproved process (concealment, enhancement)",Poultry meat and,"kebab meat (beef,","monosodium glutamate (E 621), mechanically",Poland,Germany
+Record tampering,"Unapproved process (concealment, enhancement)",poultry meat products,poultry),separated meat (MSM) (undeclared),,
+Record tampering,"Unapproved process (concealment, enhancement)",poultry meat products,,"sunset yellow FCF (E 110), ponceau 4R /",Netherlands,Belgium
+Record tampering,"Unapproved process (concealment, enhancement)",poultry meat products,,cochineal red A (E 124),,
+Record tampering,"Undeclared process (concealment, enhancement)",poultry meat products,herring fillets,"sorbic acid (E 200) (122 mg/kg), potassium",Sweden,Germany
+Record tampering,"Undeclared process (concealment, enhancement)",poultry meat products,(pickled),sorbate (E 202) (609 mg/kg),,
+Record tampering,"Undeclared process (concealment, enhancement)",poultry meat products,,sulphites (E 220 - E 228) (104 mg/l) (e-,Ukraine,Czechia
+Record tampering,"Undeclared process (concealment, enhancement)",poultry meat products,,marketed),,
+Record tampering,EU protected designation,Herbs and spices,pepper,"misleading denomination ""Piment d'Espelette""",Spain,France
+Record tampering,EU protected designation,Herbs and spices,,"misleading denominations ""Comté"",",,
+Record tampering,EU protected designation,Herbs and spices,,"""Reblochon"", ""Jamon Serrano""",,
+Record tampering,EU protected designation,Herbs and spices,,misleading denomination 'Primitivo di,,
+Record tampering,EU protected designation,Herbs and spices,,Manduria',,
+Record tampering,EU protected designation,Herbs and spices,,lower content of alcohol than declared (11.3%,,
+Record tampering,EU protected designation,Herbs and spices,,"vol. instead of 13.5% vol.), mismatch between",,
+Record tampering,EU protected designation,Herbs and spices,,analytical reports and consignment code,,
+Record tampering,Intellectual Property Rights,Herbs and spices,,traceability defects (misuse of identity and,,
+Record tampering,Intellectual Property Rights,Herbs and spices,,approval number),,
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims,United,Italy
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Denmark
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Belgium
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Austria
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Germany
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Austria
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Bulgaria
+Record tampering,Nutrition and health claims,"Dietetic foods, food supplements and fortified foods",food supplements,health claims (e-marketed),,Denmark
+Record tampering,Organic claims,Herbs and spices,cinnamon (organic),"2,4-D (dinitrophenol) (0.32 mg/kg)",,Belgium
+Record tampering,Product attribute(s) claims,Fruits and vegetables,raspberries,"self-evident claim (""no added sugar"")",,Germany
+Record tampering,"Product related dates, records and information",Fruits and vegetables,coffee beans,"misleading origin (""Made in Italy"")",,Germany
+Record tampering,"Product related dates, records and information",Confectionery,biscuits,misleading picturing (vanilla pods/flowers),,Germany
+Record tampering,"Product related dates, records and information",Confectionery,biscuits (vanilla),misleading picturing (vanilla pods/flower),,Germany
+Record tampering,"Product related dates, records and information","Dietetic foods, food supplements and fortified foods",food supplements (vanilla flavour),misleading picturing (vanilla pods/flower),,Germany
+Record tampering,"Product related dates, records and information",Feed materials,feed for cattle,GMO >0.9% (undeclared),,Italy
+Record tampering,"Product related dates, records and information",Fruits and vegetables,tomatoes (dried),higher sugar content than declared (30 g/100 g instead of 8.6 g/100 g),,Germany
+Record tampering,"Product related dates, records and information",Honey and royal jelly,honey (chestnut),"origin mislabelling, pollen profile deviation (Eucalyptus pollen 1%)",,Germany
+Record tampering,"Product related dates, records and information",Honey and royal jelly,,"misleading claim (""no added sugars"")",,Belgium
+Record tampering,"Quantity (net, gross, weight, volume)",Meat and meat products (other than poultry),sausages,lower net weight than declared (649 g instead of 850 g),,Spain
+Record tampering,Others (record tampering),Fruits and vegetables,garlic (purple),falsification of origin,,France
+Record tampering,Others (record tampering),Live animals,horse,visual identification in the passport not matching with the animal,,Italy
+Record tampering,Others (record tampering),Live animals,horses,forgery of passports,,Belgium
+Record tampering,Others (record tampering),Meat and meat products (other than poultry),sheep casings,falsification of origin,,Germany
+Record tampering,Others (record tampering),Meat and meat products (other than poultry),chicken curry,forgery of analytical report,,Belgium
+Other non-compliances,Diversion,Cephalopods and products thereof,common cuttlefish (Sepia officinalis),"fish baits sold for human consumption,",France,France
+Other non-compliances,Diversion,Cephalopods and products thereof,,infringement to marketing standards,,
+Other non-compliances,Diversion,Cephalopods and products thereof,,(minimum size requirements for fishery,,
+Other non-compliances,Diversion,Cephalopods and products thereof,,products intended for human consumption),,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",food supplements,"5-hydroxytryptophan (5-HTP), turkey tail",Austria,Netherlands
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,"(Trametes versicolor), Cordyceps militaris (e-",,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,marketed),,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",food supplements,"dexamethasone (3.6 g/kg), cyproheptadine",Belgium,Netherlands
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,(24 g/kg) (undeclared),,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",food supplements,nicotinamide mononucleotide (NMN),Canada,Sweden
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,(500 mg/day) (e-marketed),,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",food supplements,sildenafil (hydroxythiohomosildenafil:,United Kingdom,Netherlands
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,"160 g/kg ± 80 g/kg, hydroxyhomosildenafil:",,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,"130 mg/kg, desmethylthiosildenafil:",,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,74 mg/kg) (undeclared) (e-marketed),,
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",oil (CBD),tetrahydrocannabinol (THC) (delta-9-THC:,Netherlands,Germany
+Other non-compliances,"Food, ingredient not authorised in the EU","Dietetic foods, food supplements and fortified foods",,"0.22 g/kg), cannabidiol (CBD) (43.9 g/kg)",,
+Other non-compliances,Residue of pesticide(s) not approved for use in the EU,"Nuts, nut products and seeds",nut mix,chlorpyrifos (14 µg/kg),Spain,Netherlands
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Crustaceans and products thereof,shrimps (Litopenaeus vannamei) (frozen cooked),tetracycline (127 µg/kg),Vietnam,Denmark
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Crustaceans and products thereof,,"malachite green (0.4 µg/kg), leucomalachite green (0.7 µg/kg)",Bangladesh,Germany
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Fish and fish products,North African catfish (Claria Gariepinus) (frozen),crystal violet (8.35 µg/kg),Vietnam,Slovenia
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Fish and fish products,,victoria blue R (3.2 µg/kg),United Kingdom,Switzerland
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Honey and royal jelly,honey (blossom),"sulfathiazole (8.20 µg/kg), sulfadimidine (15.7 µg/kg)",Poland,Germany
+Other non-compliances,Residues of veterinary medicines not compliant with EU MRLsii,Honey and royal jelly,beef,oxytetracycline (207 µg/kg),Belgium,Belgium
+Other non-compliances,Smuggling,"Cocoa and cocoa preparations, coffee and tea",matcha tea,attempt to illegally import,China,Croatia
+Other non-compliances,Smuggling,Feed materials,,illegal import,,Belgium
+Other non-compliances,Smuggling,Fish and fish products,fishery products,illegal import,Morocco,Belgium
+Other non-compliances,Smuggling,Fruits and vegetables,blueberries,illegal import,Belarus,Lithuania
+Other non-compliances,Smuggling,Fruits and vegetables,peppers,illegal import,India,Germany
+Other non-compliances,Smuggling,Live animals,horses,traceability defects (false destination),Germany,Italy
+Other non-compliances,Smuggling,Other food products / mixed,food products,"attempt to illegally import, transport temperature, absence of labelling",Moldova,European Commission for United Kingdom (Northern Ireland)
+Other non-compliances,Smuggling,Other food products / mixed,food products,illegal import,United Kingdom,
+Other non-compliances,"Unauthorised origin (country, operators,",Cereals and bakery products,crackers,"unauthorised operator, traceability defects",Romania,Austria
+Other non-compliances,"Unauthorised origin (country, operators,",Cereals and bakery products,rice,unregistered operator,France,Sweden
+Other non-compliances,"Unauthorised origin (country, operators,",Fish and fish products,Alaska pollock fillets (Gadus chalcogrammus) (frozen),unauthorised operator,China,Austria
+Other non-compliances,"Unauthorised origin (country, operators,",Non-alcoholic beverages,soft drinks,unregistered operator,France,Belgium
+Other non-compliances,"Unauthorised origin (country, operators,",Non-alcoholic beverages,food products,illegal sale (e-marketed),Germany,Czechia
+Other non-compliances,Others (implicit claim violations),Food contact materials,kitchenware,improper documentation,United,Ireland
+Other non-compliances,Others (implicit claim violations),Food contact materials,kitchenware,invalid declaration of conformity,,Austria
+Other non-compliances,Others (implicit claim violations),Fruits and vegetables,bananas,traceability defects (origin),,France
+Other non-compliances,Others (implicit claim violations),Fruits and vegetables,beetroots (organic),"traceability defects (absence of labelling, packer identification, origin)",,France
+Other non-compliances,Others (implicit claim violations),Fruits and vegetables,beef preparation,traceability defects (unclear origin),"Austria,",Austria
+Other non-compliances,Others (implicit claim violations),Other food products / mixed,food products,transport temperature,,Germany
+Other non-compliances,Others (implicit claim violations),Other food products / mixed,kebab meat,transport temperature,,Germany
