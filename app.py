@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(
     page_title="EUFRAUDSUSPECT — Surveillance des fraudes alimentaires UE",
-    page_icon="food",
+    page_icon="🍲",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -24,14 +24,12 @@ if "filters" not in st.session_state:
 dm = st.session_state.data_manager
 
 dashboard = st.Page("pages/dashboard.py", title="Tableau de bord", icon="📊")
-geo = st.Page("pages/geo_analysis.py", title="Analyse geographique", icon="globe")
-trends = st.Page("pages/trends.py", title="Tendances", icon="chart_with_upwards_trend")
-details = st.Page("pages/details.py", title="Details des suspicions", icon="📋")
-extraction = st.Page(
-    "pages/pdf_extraction.py", title="Extraction PDF", icon="page_facing_up"
-)
-ai_page = st.Page("pages/ai_analysis.py", title="Analyse IA", icon="brain")
-guide = st.Page("pages/guide.py", title="Guide utilisateur", icon="book")
+geo = st.Page("pages/geo_analysis.py", title="Analyse géographique", icon="🌍")
+trends = st.Page("pages/trends.py", title="Tendances", icon="📈")
+details = st.Page("pages/details.py", title="Détails des suspicions", icon="📋")
+extraction = st.Page("pages/pdf_extraction.py", title="Extraction PDF", icon="🔍")
+ai_page = st.Page("pages/ai_analysis.py", title="Analyse IA", icon="🤖")
+guide = st.Page("pages/guide.py", title="Guide utilisateur", icon="📖")
 
 pg = st.navigation(
     {
