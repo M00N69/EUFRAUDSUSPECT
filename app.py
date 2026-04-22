@@ -5,25 +5,33 @@ from datetime import datetime
 
 st.set_page_config(
     page_title="EUFRAUDSUSPECT — Surveillance des fraudes alimentaires UE",
-    page_icon="🍲",
+    page_icon="food",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 if "data_manager" not in st.session_state:
-    st.session_state.data_manager = DataManager()
+    with st.spinner("Chargement des donnees..."):
+        st.session_state.data_manager = DataManager()
+
 if "last_update_check" not in st.session_state:
     st.session_state.last_update_check = None
 if "ai_conversation" not in st.session_state:
     st.session_state.ai_conversation = []
+if "filters" not in st.session_state:
+    st.session_state.filters = {}
+
+dm = st.session_state.data_manager
 
 dashboard = st.Page("pages/dashboard.py", title="Tableau de bord", icon="📊")
-geo = st.Page("pages/geo_analysis.py", title="Analyse géographique", icon="🗺️")
-trends = st.Page("pages/trends.py", title="Tendances", icon="📈")
-details = st.Page("pages/details.py", title="Détails des suspicions", icon="📋")
-extraction = st.Page("pages/pdf_extraction.py", title="Extraction PDF", icon="🔍")
-ai_page = st.Page("pages/ai_analysis.py", title="Analyse IA", icon="🤖")
-guide = st.Page("pages/guide.py", title="Guide utilisateur", icon="📖")
+geo = st.Page("pages/geo_analysis.py", title="Analyse geographique", icon="globe")
+trends = st.Page("pages/trends.py", title="Tendances", icon="chart_with_upwards_trend")
+details = st.Page("pages/details.py", title="Details des suspicions", icon="📋")
+extraction = st.Page(
+    "pages/pdf_extraction.py", title="Extraction PDF", icon="page_facing_up"
+)
+ai_page = st.Page("pages/ai_analysis.py", title="Analyse IA", icon="brain")
+guide = st.Page("pages/guide.py", title="Guide utilisateur", icon="book")
 
 pg = st.navigation(
     {
@@ -34,53 +42,42 @@ pg = st.navigation(
 )
 
 with st.sidebar:
-    st.title("🍲 EUFRAUDSUSPECT")
+    st.title("EUFRAUDSUSPECT")
     st.caption("Surveillance des fraudes alimentaires dans l'UE")
-
-    if st.button("Vérifier les nouveaux rapports", use_container_width=True):
-        with st.spinner("Vérification..."):
-            try:
-                new = check_for_new_report(st.session_state.data_manager)
-                if new:
-                    st.success("Nouveau rapport ajouté !")
-                    st.session_state.data_manager.reload()
-                else:
-                    st.info("Aucun nouveau rapport.")
-                st.session_state.last_update_check = datetime.now()
-            except Exception as e:
-                st.error(f"Erreur: {e}")
-
-    if st.session_state.last_update_check:
-        st.caption(
-            f"Dernière vérification: {st.session_state.last_update_check.strftime('%d/%m/%Y %H:%M')}"
-        )
 
     dm = st.session_state.data_manager
     has_data = dm.data is not None and not dm.data.empty
 
     if has_data:
-        st.divider()
-        st.subheader("Filtres")
+        dates = dm.get_available_dates()
+        years = sorted(set(d[:4] for d in dates if d))
+        year_options = ["Toutes"] + years
+        selected_year = st.selectbox("Annee", year_options, index=0)
 
-        all_dates = dm.get_available_dates()
-        if len(all_dates) > 1:
+        if selected_year == "Toutes":
+            filtered_dates = dates
+        else:
+            filtered_dates = [d for d in dates if d.startswith(selected_year)]
+
+        if len(filtered_dates) > 1:
             start_date, end_date = st.select_slider(
-                "Période",
-                options=all_dates,
-                value=(all_dates[0], all_dates[-1]),
+                "Periode",
+                options=filtered_dates,
+                value=(filtered_dates[0], filtered_dates[-1]),
             )
-        elif len(all_dates) == 1:
-            start_date = end_date = all_dates[0]
-            st.info(f"Période: {all_dates[0]}")
+        elif len(filtered_dates) == 1:
+            start_date = end_date = filtered_dates[0]
+            st.info(f"Periode: {filtered_dates[0]}")
         else:
             start_date = end_date = None
 
         all_categories = dm.get_product_categories()
         if all_categories:
             selected_categories = st.multiselect(
-                "Catégories de produits",
+                "Categories",
                 all_categories,
-                default=all_categories[: min(5, len(all_categories))],
+                default=[],
+                help=f"{len(all_categories)} categories disponibles",
             )
         else:
             selected_categories = []
@@ -90,7 +87,7 @@ with st.sidebar:
             selected_fraud_types = st.multiselect(
                 "Types de fraude",
                 all_fraud_types,
-                default=all_fraud_types,
+                default=[],
             )
         else:
             selected_fraud_types = []
@@ -106,34 +103,68 @@ with st.sidebar:
             selected_origins = []
 
         st.session_state.filters = {
-            "start_date": start_date if has_data else None,
-            "end_date": end_date if has_data else None,
-            "categories": selected_categories if has_data else [],
-            "fraud_types": selected_fraud_types if has_data else [],
-            "origins": selected_origins if has_data else [],
+            "start_date": start_date,
+            "end_date": end_date,
+            "categories": selected_categories,
+            "fraud_types": selected_fraud_types,
+            "origins": selected_origins,
         }
-    else:
-        st.warning(
-            "Aucune donnée. Vérifiez les nouveaux rapports ou forcez le téléchargement."
-        )
+
+        st.divider()
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Forcer le téléchargement"):
-                with st.spinner("Téléchargement..."):
-                    if force_download_latest_report(st.session_state.data_manager):
-                        st.success("Rapport téléchargé ! Rechargement...")
-                        st.rerun()
-                    else:
-                        st.error("Échec du téléchargement.")
-        with col2:
-            if st.button("Réinitialiser la base"):
-                with st.spinner("Réinitialisation..."):
+            if st.button(
+                "Verifier nouveaux rapports",
+                use_container_width=True,
+                icon="arrows_clockwise",
+            ):
+                with st.spinner("Verification en cours..."):
                     try:
-                        st.session_state.data_manager.reset_database()
-                        st.success("Base réinitialisée !")
-                        st.rerun()
+                        result = check_for_new_report(dm)
+                        dm.reload()
+                        if result:
+                            st.success("Nouveau rapport ajoute !")
+                        else:
+                            st.info("Aucun nouveau rapport disponible.")
+                        st.session_state.last_update_check = datetime.now()
                     except Exception as e:
                         st.error(f"Erreur: {e}")
+        with col2:
+            if st.button(
+                "Forcer mise a jour PDF", use_container_width=True, icon="download"
+            ):
+                with st.spinner("Telechargement..."):
+                    try:
+                        if force_download_latest_report(dm):
+                            st.success("Rapport telecharge et extrait !")
+                            dm.reload()
+                            st.rerun()
+                        else:
+                            st.error("Echec du telechargement.")
+                    except Exception as e:
+                        st.error(f"Erreur: {e}")
+
+        if st.session_state.last_update_check:
+            st.caption(
+                f"Derniere verif: {st.session_state.last_update_check.strftime('%d/%m/%Y %H:%M')}"
+            )
+
+    else:
+        st.warning(
+            "Aucune donnee. Cliquez sur 'Forcer mise a jour PDF' pour telecharger le dernier rapport."
+        )
+        if st.button("Forcer mise a jour PDF", icon="download"):
+            with st.spinner("Telechargement..."):
+                try:
+                    if force_download_latest_report(dm):
+                        dm.reload()
+                        st.success("Rapport telecharge ! Redemarrage...")
+                        st.rerun()
+                    else:
+                        st.error("Echec.")
+                except Exception as e:
+                    st.error(f"Erreur: {e}")
+
         st.session_state.filters = {
             "start_date": None,
             "end_date": None,

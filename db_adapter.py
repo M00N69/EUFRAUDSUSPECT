@@ -146,9 +146,21 @@ def _load_csv_source(csv_path: str) -> pd.DataFrame:
     drop_cols = [c for c in df.columns if c.startswith("Unnamed")]
     df = df.drop(columns=drop_cols, errors="ignore")
 
-    if "year" in df.columns:
+    if "date_raw" in df.columns:
+        df["_parsed_year"] = pd.to_datetime(
+            df["date_raw"], format="%d/%m/%Y", errors="coerce"
+        ).dt.year
+        df["_parsed_month"] = pd.to_datetime(
+            df["date_raw"], format="%d/%m/%Y", errors="coerce"
+        ).dt.month
+
+    if "_parsed_year" in df.columns and df["_parsed_year"].notna().any():
+        df["report_year"] = df["_parsed_year"].astype("Int64")
+    elif "year" in df.columns:
         df["report_year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
-    if "month_str" in df.columns:
+    if "_parsed_month" in df.columns and df["_parsed_month"].notna().any():
+        df["report_month"] = df["_parsed_month"].astype("Int64")
+    elif "month_str" in df.columns:
         df["report_month"] = df["month_str"].apply(_parse_csv_month)
     if "report_year" in df.columns and "report_month" in df.columns:
         df["report_date"] = df.apply(
