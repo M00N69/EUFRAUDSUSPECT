@@ -41,7 +41,7 @@ with col_btn:
         "suspicions_detail.csv",
         "text/csv",
         use_container_width=True,
-        icon="download",
+        icon="💾",
     )
 
 if "date" in filtered_data.columns:

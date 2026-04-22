@@ -247,7 +247,12 @@ with col_stat1:
 with col_stat2:
     csv = filtered[avail].to_csv(index=False).encode("utf-8")
     st.download_button(
-        "Exporter CSV", csv, "fraudes.csv", "text/csv", icon=":material/save:"
+        "Exporter CSV",
+        csv_data,
+        "fraudes.csv",
+        "text/csv",
+        use_container_width=True,
+        icon="💾",
     )
 
 st.dataframe(
