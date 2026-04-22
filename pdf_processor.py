@@ -288,7 +288,10 @@ def download_latest_report(save_dir: str | None = None) -> tuple[str | None, str
         else:
             full_url = BASE_URL.rstrip("/") + "/" + latest_pdf_link
 
-        filename = os.path.basename(latest_pdf_link)
+        if "?filename=" in latest_pdf_link:
+            filename = os.path.basename(latest_pdf_link.split("?filename=")[-1])
+        else:
+            filename = os.path.basename(latest_pdf_link)
         local_path = os.path.join(save_dir, filename)
 
         pdf_response = requests.get(full_url, stream=True, timeout=60)
