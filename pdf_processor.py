@@ -80,7 +80,7 @@ def _extract_total_suspicions(pdf_path: str) -> int:
                 if match:
                     return int(match.group(1))
     except Exception as e:
-        logger.warning("Extraction total suspicions échouée: %s", e)
+        logger.warning("Extraction total suspicions echouee: %s", e)
     return 0
 
 
@@ -110,26 +110,38 @@ def _extract_date_from_pdf(pdf_path: str) -> str | None:
                 if match:
                     return f"{match.group(1)}-{months.index(month) + 1:02d}"
     except Exception as e:
-        logger.warning("Extraction date PDF échouée: %s", e)
+        logger.warning("Extraction date PDF echouee: %s", e)
     return None
 
 
 def _extract_report_date(filename: str, pdf_path: str, full_url: str) -> str:
-    match = re.search(r"report[_-](\d{4})(\d{2})\.pdf", filename, re.IGNORECASE)
+    if "?filename=" in full_url:
+        fname = full_url.split("?filename=")[-1]
+    else:
+        fname = filename
+    match = re.search(r"report[_-](\d{4})(\d{2})\.pdf", fname, re.IGNORECASE)
     if match:
         return f"{match.group(1)}-{match.group(2)}"
-    match = re.search(r"(\d{4})[_-](\d{2})\.pdf", filename, re.IGNORECASE)
+    match = re.search(r"(\d{4})[_-](\d{2})\.pdf", fname, re.IGNORECASE)
     if match:
         return f"{match.group(1)}-{match.group(2)}"
     date = _extract_date_from_pdf(pdf_path)
     if date:
         return date
-    match = re.search(r"(\d{4})(\d{2})\.pdf", full_url)
+    match = re.search(r"(\d{4})(\d{2})\.pdf", fname)
     if match:
         return f"{match.group(1)}-{match.group(2)}"
     now = datetime.now()
-    logger.warning("Date non extractible, utilisation de la date actuelle")
+    logger.warning("Date non extractible, utilisation date actuelle")
     return f"{now.year}-{now.month:02d}"
+
+
+def _clean_value(text: str) -> str:
+    if not text:
+        return ""
+    text = re.sub(r"\*+$", "", text.strip())
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
 def extract_data_from_pdf(pdf_path: str) -> dict:
@@ -240,7 +252,7 @@ def extract_data_from_pdf(pdf_path: str) -> dict:
         extracted_data["confidence_score"] = min(len(suspicions) / total_announced, 1.5)
         if abs(len(suspicions) - total_announced) > total_announced * 0.2:
             logger.warning(
-                "Écart extraction: %d extraites vs %d annoncées",
+                "Ecart extraction: %d extraites vs %d annoncees",
                 len(suspicions),
                 total_announced,
             )
@@ -248,14 +260,6 @@ def extract_data_from_pdf(pdf_path: str) -> dict:
         extracted_data["confidence_score"] = 0.5
 
     return extracted_data
-
-
-def _clean_value(text: str) -> str:
-    if not text:
-        return ""
-    text = re.sub(r"\*+$", "", text.strip())
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
 
 
 def download_latest_report(save_dir: str | None = None) -> tuple[str | None, str]:
@@ -276,8 +280,8 @@ def download_latest_report(save_dir: str | None = None) -> tuple[str | None, str
                 pdf_links.append(href)
 
         if not pdf_links:
-            logger.error("Aucun lien PDF trouvé")
-            return None, "Aucun lien PDF trouvé"
+            logger.error("Aucun lien PDF trouve")
+            return None, "Aucun lien PDF trouve"
 
         latest_pdf_link = pdf_links[0]
         if latest_pdf_link.startswith("http"):
@@ -288,10 +292,11 @@ def download_latest_report(save_dir: str | None = None) -> tuple[str | None, str
         else:
             full_url = BASE_URL.rstrip("/") + "/" + latest_pdf_link
 
-        if "?filename=" in latest_pdf_link:
-            filename = os.path.basename(latest_pdf_link.split("?filename=")[-1])
+        if "?filename=" in full_url:
+            filename = full_url.split("?filename=")[-1]
         else:
-            filename = os.path.basename(latest_pdf_link)
+            filename = os.path.basename(full_url)
+
         local_path = os.path.join(save_dir, filename)
 
         pdf_response = requests.get(full_url, stream=True, timeout=60)
@@ -302,11 +307,11 @@ def download_latest_report(save_dir: str | None = None) -> tuple[str | None, str
                 f.write(chunk)
 
         report_date = _extract_report_date(filename, local_path, full_url)
-        logger.info("PDF téléchargé: %s (date: %s)", filename, report_date)
+        logger.info("PDF telecharge: %s (date: %s)", filename, report_date)
         return local_path, report_date
 
     except Exception as e:
-        logger.error("Erreur téléchargement: %s", e)
+        logger.error("Erreur telechargement: %s", e)
         return None, str(e)
 
 
@@ -320,7 +325,7 @@ def check_for_new_report(data_manager) -> bool:
         date_obj = datetime.strptime(report_date, "%Y-%m")
         year, month = date_obj.year, date_obj.month
     except ValueError:
-        logger.error("Format de date invalide: %s", report_date)
+        logger.error("Format date invalide: %s", report_date)
         return False
 
     if latest_year is not None and latest_month is not None:
