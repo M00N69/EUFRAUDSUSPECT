@@ -227,15 +227,9 @@ def _rebuild_db_from_dataframes(db_path: str, *dataframes: pd.DataFrame) -> None
         conn.close()
         return
     combined = pd.concat(all_dfs, ignore_index=True)
-    dedup_cols = [c for c in ["source_id"] if c in combined.columns]
-    if (
-        dedup_cols
-        and combined["source_id"].notna().any()
-        and (combined["source_id"] != "").any()
-    ):
-        combined = combined.drop_duplicates(subset=dedup_cols, keep="last")
+    combined = combined.dropna(subset=["product_category", "issue"], how="all")
     combined = combined.drop_duplicates(
-        subset=["product_category", "commodity", "issue", "origin", "report_date"],
+        subset=["product_category", "commodity", "issue", "origin"],
         keep="last",
     )
     if "report_date" in combined.columns:
@@ -300,25 +294,16 @@ class DataManager:
         self._ensure_and_load()
 
     def _ensure_and_load(self) -> None:
-        need_rebuild = False
-        if not os.path.exists(self.db_path):
-            need_rebuild = True
-        else:
+        if os.path.exists(self.db_path):
             try:
-                conn = sqlite3.connect(self.db_path)
-                c = conn.cursor()
-                c.execute("SELECT COUNT(*) FROM reports")
-                count = c.fetchone()[0]
-                conn.close()
-                if count == 0:
-                    need_rebuild = True
+                os.remove(self.db_path)
+                logger.info("Ancienne base supprimee, reconstruction propre")
             except Exception:
-                need_rebuild = True
+                pass
 
-        if need_rebuild:
-            csv_df = _load_csv_source(self.csv_source)
-            extracted_df = _load_extracted_csvs(self.extracted_dir)
-            _rebuild_db_from_dataframes(self.db_path, csv_df, extracted_df)
+        csv_df = _load_csv_source(self.csv_source)
+        extracted_df = _load_extracted_csvs(self.extracted_dir)
+        _rebuild_db_from_dataframes(self.db_path, csv_df, extracted_df)
 
         self._load_data()
 
