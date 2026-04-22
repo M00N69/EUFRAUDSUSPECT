@@ -1,6 +1,7 @@
 data/database.sqlite
 data/database.sqlite.backup
-data/pdf_reports/
+data/pdf_reports/*
+!data/pdf_reports/.gitkeep
 __pycache__/
 *.pyc
 *.pyo
