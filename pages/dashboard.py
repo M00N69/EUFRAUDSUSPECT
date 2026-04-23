@@ -7,6 +7,7 @@ from visualizations import (
     create_country_choropleth,
     create_fraud_category_chart,
     create_timeline_chart,
+    create_timeline_by_fraud_type,
 )
 from utils import format_date_display
 
